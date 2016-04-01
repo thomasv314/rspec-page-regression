@@ -11,9 +11,14 @@ module RSpec::PageRegression
 
     attr_reader :result
 
-    def initialize(filepaths)
+    def initialize(filepaths, configuration)
       @filepaths = filepaths
-      @result = compare
+
+      if configuration.passive_visual_regressor == true
+        @result = compare_passive
+      else
+        @result = compare
+      end
     end
 
     def expected_size
@@ -25,6 +30,29 @@ module RSpec::PageRegression
     end
 
     private
+
+    def compare_passive
+      if @filepaths.expected_image.exist?
+        @iexpected = ChunkyPNG::Image.from_file(@filepaths.expected_image)
+        @itest = ChunkyPNG::Image.from_file(@filepaths.test_image)
+        puts "Size difference detected." if  test_size != expected_size
+        unless pixels_match?
+          puts "Difference detected in expect and test image."
+          puts "  File: #{@filepaths.difference_image}"
+        end
+      end
+      create_directory_if_not_exists
+      FileUtils.cp(@filepaths.test_image, @filepaths.expected_image)
+      return :match
+    end
+
+    def create_directory_if_not_exists
+      if Dir.exists?(@filepaths.expected_image.dirname)
+        return
+      else
+        FileUtils.mkdir_p(@filepaths.expected_image.dirname)
+      end
+    end
 
     def compare
       @filepaths.difference_image.unlink if @filepaths.difference_image.exist?

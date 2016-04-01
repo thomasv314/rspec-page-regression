@@ -2,12 +2,15 @@ require 'which_works'
 
 module RSpec::PageRegression
 
-  RSpec::Matchers.define :match_expectation do |expectation_path|
+  RSpec.configure do |config|
+    config.add_setting :passive_visual_regressor, default: false
+  end
 
+  RSpec::Matchers.define :match_expectation do |expectation_path|
     match do |page|
       @filepaths = FilePaths.new(RSpec.current_example, expectation_path)
       Renderer.render(page, @filepaths.test_image)
-      @comparison = ImageComparison.new(@filepaths)
+      @comparison = ImageComparison.new(@filepaths, RSpec.configuration)
       @comparison.result == :match
     end
 
